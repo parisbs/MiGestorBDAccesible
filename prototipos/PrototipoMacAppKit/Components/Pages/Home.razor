@@ -1,0 +1,298 @@
+@page "/"
+@implements IDisposable
+@inject IJSRuntime js
+@inject AnunciadorService anunciador
+@inject EstadoPrototipo estado
+@inject ArchivosNativos archivos
+
+<Anunciador />
+<BarraMenus Inerte="_dialogo is not null" />
+<main inert="@(_dialogo is not null)">
+    <h1>Prueba de accesibilidad en macOS (AppKit)</h1>
+    <p>Usa Tab para cambiar de sección, F10 para el menú y F8 para volver al árbol. Si tu teclado usa las teclas F para funciones del sistema, añade Fn.</p>
+    <p>Con VoiceOver, desactiva la navegación rápida (flechas izquierda y derecha juntas) para enviar las flechas a los controles. Command se anuncia como Comando.</p>
+    <div class="columnas">
+        <section aria-labelledby="titulo-arbol">
+            <h2 id="titulo-arbol">Explorador de prueba</h2>
+            <p>Usa las flechas, Inicio y Fin. Derecha expande; izquierda contrae o vuelve al padre.</p>
+            <Explorador />
+        </section>
+        <section aria-labelledby="titulo-consulta">
+            <h2 id="titulo-consulta">Consultas de prueba</h2>
+            <div role="tablist" aria-label="Pestañas de consulta" data-zona="pestanas" @onkeydown="TeclaPestanasAsync">
+                @for (var i = 0; i < _pestanas.Count; i++)
+                {
+                    var indice = i;
+                    var pestana = _pestanas[i];
+                    <button @key="pestana.Id" id="@($"pestana-{pestana.Id}")" role="tab"
+                            aria-selected="@(i == _activa ? "true" : "false")" aria-controls="panel-consulta"
+                            aria-posinset="@(i + 1)" aria-setsize="@_pestanas.Count" tabindex="@(i == _activa ? 0 : -1)"
+                            @onclick="() => ActivarAsync(indice)">@pestana.Titulo</button>
+                }
+            </div>
+            <div role="tabpanel" id="panel-consulta" aria-labelledby="@($"pestana-{Actual.Id}")" data-zona="editor">
+                <label for="editor-sql">Texto de @Actual.Titulo</label>
+                <textarea id="editor-sql" @bind="Actual.Texto" @bind:event="oninput" spellcheck="false"></textarea>
+                <button @onclick="() => NuevaConsulta(null)">Nueva consulta (Command+N)</button>
+                <button @onclick="() => NuevaPestana(null)">Nueva pestaña (Command+T)</button>
+                <button @onclick="CerrarPestana">Cerrar pestaña (Command+W)</button>
+                <button @onclick="() => GuardarArchivo(Actual.Texto, false)">Guardar (Command+S)</button>
+                <button @onclick="() => GuardarArchivo(Actual.Texto, true)">Guardar como… (Command+Mayúsculas+S)</button>
+                <button @onclick="() => AbrirArchivo(Actual.Texto)">Abrir archivo… (Command+O)</button>
+                <button @onclick="() => Ejecutar(Actual.Texto, 0, 0)">Ejecutar (Command+Return / F5)</button>
+            </div>
+        </section>
+    </div>
+    <section aria-labelledby="titulo-avisos">
+        <h2 id="titulo-avisos">Prueba del anunciador</h2>
+        <button @onclick='() => InformarAsync("Anuncio normal de prueba.")' >Emitir anuncio normal</button>
+        <button @onclick='() => InformarAsync("Anuncio urgente de prueba.", true)' >Emitir anuncio urgente</button>
+        <button @onclick="RepetirAsync">Emitir el mismo anuncio dos veces</button>
+    </section>
+    <section aria-labelledby="titulo-cierre">
+        <h2 id="titulo-cierre">Cambios pendientes y cierre</h2>
+        <label><input type="checkbox" @bind="estado.CambiosPendientes" /> Simular cambios pendientes</label>
+        <p>Estado: @(estado.CambiosPendientes ? "Tienes cambios pendientes." : "No tienes cambios pendientes.")</p>
+        <button @onclick="() => SolicitarCierre(false)">Cerrar ventana con comprobación</button>
+        <button @onclick="Salir">Salir (Command+Q)</button>
+        <p>El botón rojo y Command+Q pasan por esta comprobación. Command+W cierra una pestaña de consulta.</p>
+    </section>
+    <section aria-labelledby="titulo-registro">
+        <h2 id="titulo-registro">Registro de acciones</h2>
+        <p>Última acción: @_ultimoMensaje</p>
+        <ol>@foreach (var mensaje in _registro) { <li>@mensaje</li> }</ol>
+    </section>
+</main>
+
+@if (_dialogo is not null)
+{
+    <div class="fondo-dialogo">
+        <section role="dialog" aria-modal="true" aria-labelledby="titulo-dialogo" aria-describedby="texto-dialogo"
+                 data-dialogo @ref="_elementoDialogo" @onkeydown="TeclaDialogo">
+            <h2 id="titulo-dialogo" tabindex="-1">@(_dialogo == "cierre" ? "Tienes cambios pendientes" : "Ayuda del prototipo")</h2>
+            @if (_dialogo == "cierre")
+            {
+                <p id="texto-dialogo">¿Quieres guardar el texto de la pestaña activa antes de @(_salir ? "salir" : "cerrar la ventana")?</p>
+                <button disabled="@_ocupado" @onclick="() => ConfirmarCierreAsync(true)">Guardar</button>
+                <button disabled="@_ocupado" @onclick="() => ConfirmarCierreAsync(false)">No guardar</button>
+                <button data-foco-inicial disabled="@_ocupado" @onclick="CancelarDialogoAsync">Cancelar</button>
+            }
+            else
+            {
+                <p id="texto-dialogo">Prueba F10, las flechas, Escape, Control+Tab y Control+Mayúsculas+Tab. Los menús muestran los atajos Command. Option sola permite escribir caracteres y no abre el menú.</p>
+                <button data-foco-inicial @onclick="CancelarDialogoAsync">Cerrar ayuda</button>
+            }
+        </section>
+    </div>
+}
+
+@code {
+    private sealed class Pestana(int id, string titulo)
+    {
+        public int Id { get; } = id;
+        public string Titulo { get; } = titulo;
+        public string Texto { get; set; } = "SELECT 'Prueba accesible';";
+    }
+
+    private readonly List<Pestana> _pestanas = [new(1, "Consulta 1"), new(2, "Consulta 2"), new(3, "Consulta 3")];
+    private readonly List<string> _registro = [];
+    private Pestana Actual => _pestanas[_activa];
+    private int _activa;
+    private int _siguienteId = 4;
+    private string _ultimoMensaje = "Prototipo preparado.";
+    private string? _dialogo;
+    private string? _enfocar;
+    private bool _prepararDialogo;
+    private bool _salir;
+    private bool _ocupado;
+    private ElementReference _elementoDialogo;
+    private DotNetObjectReference<Home>? _referencia;
+
+    protected override void OnInitialized() => estado.CierreSolicitado += SolicitarCierre;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _referencia = DotNetObjectReference.Create(this);
+            await js.InvokeVoidAsync("miGestor.registrarEspacio", _referencia);
+            await js.InvokeVoidAsync("miGestor.registrarAyuda", _referencia);
+            await js.InvokeVoidAsync("prototipoMac.registrar", _referencia);
+        }
+        if (_prepararDialogo)
+        {
+            _prepararDialogo = false;
+            await js.InvokeVoidAsync("miGestor.prepararDialogo", _elementoDialogo);
+        }
+        if (_enfocar is { } id)
+        {
+            _enfocar = null;
+            await js.InvokeVoidAsync("miGestor.enfocar", id);
+        }
+    }
+
+    private Task InformarAsync(string mensaje, bool urgente = false) => InvokeAsync(async () =>
+    {
+        _ultimoMensaje = mensaje;
+        _registro.Add($"{DateTime.Now:HH:mm:ss} — {mensaje}");
+        if (_registro.Count > 50) _registro.RemoveAt(0);
+        StateHasChanged();
+        if (urgente) await anunciador.AnunciarUrgenteAsync(mensaje);
+        else await anunciador.AnunciarAsync(mensaje);
+    });
+
+    private async Task RepetirAsync()
+    {
+        await InformarAsync("Este es el mismo anuncio repetido.");
+        await Task.Delay(1500);
+        await InformarAsync("Este es el mismo anuncio repetido.");
+    }
+
+    private async Task ActivarAsync(int indice)
+    {
+        _activa = indice;
+        _enfocar = $"pestana-{Actual.Id}";
+        await InformarAsync($"{Actual.Titulo}, pestaña {_activa + 1} de {_pestanas.Count}.");
+    }
+
+    private Task TeclaPestanasAsync(KeyboardEventArgs e) => e.Key switch
+    {
+        "ArrowRight" => CambiarPestana(1), "ArrowLeft" => CambiarPestana(-1),
+        "Home" => ActivarAsync(0), "End" => ActivarAsync(_pestanas.Count - 1),
+        _ => Task.CompletedTask
+    };
+
+    [JSInvokable] public Task CambiarPestana(int desplazamiento) => InvokeAsync(() => ActivarAsync((_activa + desplazamiento + _pestanas.Count) % _pestanas.Count));
+    [JSInvokable] public Task NuevaConsulta(string? baseDatos) => CrearPestanaAsync("Nueva consulta");
+    [JSInvokable] public Task NuevaPestana(string? baseDatos) => CrearPestanaAsync("Nueva pestaña");
+
+    private Task CrearPestanaAsync(string accion) => InvokeAsync(async () =>
+    {
+        var id = _siguienteId++;
+        _pestanas.Add(new(id, $"Consulta {id}"));
+        await ActivarAsync(_pestanas.Count - 1);
+        await InformarAsync($"{accion}: {Actual.Titulo}.");
+    });
+
+    [JSInvokable] public Task CerrarPestana() => InvokeAsync(async () =>
+    {
+        if (_pestanas.Count == 1) { await InformarAsync("Cerrar pestaña: se conserva una pestaña para continuar las pruebas."); return; }
+        var titulo = Actual.Titulo;
+        _pestanas.RemoveAt(_activa);
+        await ActivarAsync(Math.Min(_activa, _pestanas.Count - 1));
+        await InformarAsync($"Cerrar pestaña: {titulo}. Activa: {Actual.Titulo}, {_activa + 1} de {_pestanas.Count}.");
+    });
+
+    [JSInvokable] public Task AbrirBusqueda() => InformarAsync("Buscar y reemplazar.");
+    [JSInvokable] public Task BuscarObjeto(string? baseDatos) => InformarAsync("Buscar objeto.");
+    [JSInvokable] public Task AbrirHistorial() => InformarAsync("Historial de consultas.");
+    [JSInvokable] public Task BuscarSiguiente(bool atras) => InformarAsync(atras ? "Buscar anterior." : "Buscar siguiente.");
+    [JSInvokable] public Task Ejecutar(string? texto, int inicio, int fin) => InformarAsync("Ejecutar consulta de prueba. No se conecta a una base de datos.");
+
+    [JSInvokable] public Task AbrirArchivo(string? textoActual) => InvokeAsync(async () =>
+    {
+        if (_ocupado || estado.DialogoNativoAbierto) return;
+        _ocupado = true;
+        await js.InvokeVoidAsync("miGestor.recordarFoco");
+        try
+        {
+            await InformarAsync("Abrir archivo: elige un archivo de texto en el diálogo del sistema.");
+            var resultado = await archivos.AbrirAsync();
+            if (resultado is { } archivo)
+            {
+                Actual.Texto = archivo.Texto;
+                await InformarAsync($"Archivo abierto: {archivo.Nombre}. Contenido: {archivo.Texto}");
+            }
+            else await InformarAsync("Apertura cancelada.");
+        }
+        catch (Exception ex) { await InformarAsync($"No se pudo abrir: {ex.Message}", true); }
+        finally { _ocupado = false; await js.InvokeVoidAsync("miGestor.volverFoco"); }
+    });
+
+    [JSInvokable] public Task GuardarArchivo(string? textoActual, bool comoNuevo) => InvokeAsync(async () =>
+    {
+        if (_ocupado || estado.DialogoNativoAbierto) return;
+        if (textoActual is not null) Actual.Texto = textoActual;
+        _ocupado = true;
+        await js.InvokeVoidAsync("miGestor.recordarFoco");
+        try { await GuardarAsync(comoNuevo); }
+        finally { _ocupado = false; await js.InvokeVoidAsync("miGestor.volverFoco"); }
+    });
+
+    private async Task<bool> GuardarAsync(bool comoNuevo)
+    {
+        try
+        {
+            await InformarAsync(comoNuevo ? "Guardar como: elige nombre y carpeta." : "Guardar: elige nombre y carpeta.");
+            var nombre = await archivos.GuardarAsync(Actual.Texto);
+            if (nombre is null) { await InformarAsync("Guardado cancelado."); return false; }
+            estado.CambiosPendientes = false;
+            await InformarAsync($"Archivo guardado: {nombre}.");
+            return true;
+        }
+        catch (Exception ex) { await InformarAsync($"No se pudo guardar: {ex.Message}", true); return false; }
+    }
+
+    [JSInvokable] public Task AbrirAyuda(string temas) => InvokeAsync(() => AbrirDialogoAsync("ayuda"));
+    [JSInvokable] public Task Salir() => SolicitarCierre(true);
+    [JSInvokable] public Task SolicitarCierre(bool salir) => InvokeAsync(async () =>
+    {
+        if (_dialogo is not null || _ocupado || estado.DialogoNativoAbierto) return;
+        _salir = salir;
+        if (estado.CambiosPendientes) await AbrirDialogoAsync("cierre");
+        else await TerminarAsync();
+    });
+
+    private async Task AbrirDialogoAsync(string tipo)
+    {
+        if (_dialogo is not null) return;
+        await js.InvokeVoidAsync("miGestor.recordarFoco");
+        _dialogo = tipo;
+        _prepararDialogo = true;
+        StateHasChanged();
+    }
+
+    private async Task CancelarDialogoAsync()
+    {
+        if (_ocupado) return;
+        var cierre = _dialogo == "cierre";
+        _dialogo = null;
+        StateHasChanged();
+        await js.InvokeVoidAsync("miGestor.volverFoco");
+        await InformarAsync(cierre ? "Cierre cancelado. La aplicación sigue abierta." : "Ayuda cerrada.");
+    }
+
+    private async Task ConfirmarCierreAsync(bool guardar)
+    {
+        if (_ocupado) return;
+        _ocupado = true;
+        try
+        {
+            if (guardar && !await GuardarAsync(true))
+            {
+                await InformarAsync("La aplicación sigue abierta. Elige una respuesta para cerrar o cancela.");
+                _enfocar = "titulo-dialogo";
+                return;
+            }
+            if (!guardar) await InformarAsync("No guardar: se descartan los cambios simulados.");
+            estado.CambiosPendientes = false;
+            await TerminarAsync();
+        }
+        finally { _ocupado = false; StateHasChanged(); }
+    }
+
+    private async Task TerminarAsync()
+    {
+        await InformarAsync(_salir ? "Salir: cerrando la aplicación." : "Cerrar ventana.");
+        await Task.Delay(1000);
+        await estado.CerrarAsync(_salir);
+    }
+
+    private Task TeclaDialogo(KeyboardEventArgs e) => e.Key == "Escape" ? CancelarDialogoAsync() : Task.CompletedTask;
+
+    public void Dispose()
+    {
+        estado.CierreSolicitado -= SolicitarCierre;
+        _referencia?.Dispose();
+    }
+}
