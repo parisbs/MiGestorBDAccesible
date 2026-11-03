@@ -15,4 +15,4 @@ Estos registros viven solo en la rama `workflow` del fork.
 
 ## Registros
 
-Ninguno todavía.
+- [0001. Proteger las contraseñas guardadas con DPAPI en Windows y Data Protection en macOS y Linux](0001-proteger-contrasenas-segun-el-sistema.md)
