@@ -52,12 +52,14 @@ namespace MiGestorBDAccesible.Core.Conexiones
 
         public static string? DescribirCarga(ResultadoCargaConexiones resultado)
         {
+            var avisoDescartadas = resultado.Descartadas == 1
+                ? "Se descartó 1 conexión que no se pudo leer."
+                : $"Se descartaron {resultado.Descartadas} conexiones que no se pudieron leer.";
             var aviso = resultado.Estado switch
             {
                 EstadoCargaConexiones.Danado => "El archivo conexiones.json estaba dañado. La lista de conexiones está vacía.",
-                EstadoCargaConexiones.Parcial => resultado.Descartadas == 1
-                    ? "Se descartó 1 conexión que no se pudo leer. Se conservaron las conexiones legibles."
-                    : $"Se descartaron {resultado.Descartadas} conexiones que no se pudieron leer. Se conservaron las conexiones legibles.",
+                EstadoCargaConexiones.Parcial => $"{avisoDescartadas} Se conservaron las conexiones legibles.",
+                EstadoCargaConexiones.ErrorLectura when resultado.Descartadas > 0 => $"Se leyeron las conexiones legibles. {avisoDescartadas} No se pudo conservar o reescribir conexiones.json. {resultado.Error?.Message} No puedes guardar ni eliminar conexiones hasta resolver el error.",
                 EstadoCargaConexiones.ErrorLectura => $"No se pudo leer conexiones.json. No puedes guardar ni eliminar conexiones hasta resolver el error. {resultado.Error?.Message}",
                 _ => null
             };
@@ -161,6 +163,8 @@ namespace MiGestorBDAccesible.Core.Conexiones
         private async Task<ResultadoCargaConexiones> LeerAsync()
         {
             string? rutaCopia = null;
+            var conexiones = new List<ConexionModelo>();
+            var descartadas = 0;
             try
             {
                 JsonDocument documento;
@@ -191,8 +195,6 @@ namespace MiGestorBDAccesible.Core.Conexiones
                         return new() { Estado = EstadoCargaConexiones.Danado, RutaCopia = rutaCopia };
                     }
 
-                    var conexiones = new List<ConexionModelo>();
-                    var descartadas = 0;
                     foreach (var elemento in documento.RootElement.EnumerateArray())
                     {
                         if (elemento.ValueKind == JsonValueKind.Object)
@@ -232,7 +234,14 @@ namespace MiGestorBDAccesible.Core.Conexiones
             }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException)
             {
-                return new() { Estado = EstadoCargaConexiones.ErrorLectura, Error = error, RutaCopia = rutaCopia };
+                return new()
+                {
+                    Conexiones = conexiones,
+                    Estado = EstadoCargaConexiones.ErrorLectura,
+                    Descartadas = descartadas,
+                    Error = error,
+                    RutaCopia = rutaCopia
+                };
             }
         }
 

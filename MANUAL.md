@@ -102,6 +102,8 @@ Al abrir la lista, el lector de pantalla anuncia lo ocurrido después de enfocar
 
 Si otro programa bloquea el archivo o no tienes permiso para leerlo, la aplicación anuncia el error y deja el archivo intacto, sin moverlo ni copiarlo. Hasta resolverlo, no puedes guardar ni eliminar conexiones. Si lo intentas, el lector anuncia el error de forma urgente; al guardar, conservas los datos del formulario y el foco para poder reintentarlo.
 
+Si se pudieron leer algunas conexiones pero falla la copia o la reescritura del archivo, la lista muestra las conexiones legibles, ordenadas por nombre. El aviso indica cuántas se descartaron, el error al conservar o reescribir el archivo y que no puedes guardar ni eliminar conexiones hasta resolverlo. Si se llegó a crear la copia, también indica su nombre y su carpeta.
+
 Al guardar, la aplicación escribe primero en un archivo temporal en la misma carpeta y solo sustituye `conexiones.json` cuando termina. Si falla la escritura, conserva completo el archivo anterior.
 
 ## El explorador de objetos
