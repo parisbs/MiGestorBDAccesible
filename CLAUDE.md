@@ -7,10 +7,13 @@ Windows).
 ## Comandos
 
 - Verify: `dotnet build MiGestorBDAccesible.sln && dotnet test MiGestorBDAccesible.sln --no-build`
-- La compilación necesita Windows y el SDK de .NET 10 (net10.0-windows, WPF).
-  En otra plataforma Verify no se puede ejecutar: se informa como no
-  ejecutado y la referencia es el trabajo de CI `Compilar y probar`, que
-  ejecuta lo mismo en `windows-latest`.
+- La aplicación de escritorio necesita Windows y el SDK de .NET 10
+  (net10.0-windows, WPF). El núcleo, las pruebas y las herramientas son
+  net10.0 y compilan en cualquier sistema. Fuera de Windows, Verify completo no
+  se puede ejecutar: se compilan y prueban `MiGestorBDAccesible.Pruebas` y
+  `MiGestorBDAccesible.Herramientas` como el trabajo de CI `Compilar y probar
+  en macOS`, el resto se informa como no ejecutado y la referencia es el
+  trabajo `Compilar y probar`, que ejecuta Verify en `windows-latest`.
 - `crear-instalador.ps1` genera el instalador NSIS y el manual en HTML en
   `salida/`; necesita NSIS (`winget install NSIS.NSIS`).
 
@@ -38,8 +41,11 @@ Windows).
   `CapacidadesMotorModelo` y `TerminosMotorModelo` de cada proveedor, nunca
   por comprobaciones del motor en la interfaz.
 - Sin uso de red ni telemetría. Las conexiones, el historial y las pestañas se
-  quedan en `%APPDATA%\MiGestorBDAccesible`, y las contraseñas se cifran con
-  DPAPI para el usuario actual de Windows.
+  quedan en la carpeta de datos de la aplicación del usuario
+  (`%APPDATA%\MiGestorBDAccesible` en Windows). Las contraseñas se cifran
+  para el usuario actual: con DPAPI en Windows y con Data Protection, con las
+  claves en la carpeta `claves` junto a `conexiones.json`, en los demás
+  sistemas.
 - `MiGestorBDAccesible.Core` no depende de WPF ni de Blazor; la lógica que se
   puede probar va ahí, no en los componentes Razor.
 - Licencia: GPL 3 o posterior con una excepción de la sección 7 que solo
