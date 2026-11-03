@@ -84,8 +84,13 @@ producto y sus decisiones son del autor original.
   el mismo cambio, y las fichas de F1 cuando toca la ayuda de SQL.
 - Los diagramas de la documentación usan Mermaid y llevan una breve
   descripción en prosa.
-- Las decisiones que cierran una alternativa se registran en `docs/adr/`
-  (formato MADR 4; las reglas están en su `README.md`).
+- No se crean ADRs nuevos: el autor original no los usa y no puede
+  discutirlos ni aceptarlos con nosotros, así que solo añadirían ruido. Una
+  decisión que cierra una alternativa se resume en el issue de la tarea
+  (decisión, alternativas descartadas y por qué) y, cuando el trabajo va al
+  original, en el cuerpo de su pull request. `docs/adr/` conserva el registro
+  0001, ya desactualizado (habla de Linux), y la comprobación de ADRs sigue
+  en la CI hasta que se retire.
 
 ## Fork y repositorio original
 
