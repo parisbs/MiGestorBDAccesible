@@ -2,9 +2,8 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-# La restauración Release debe estar preparada con los paquetes locales.
-# --no-restore evita consultar orígenes de paquetes durante el empaquetado.
-dotnet build -c Release --no-restore -p:EnableCodeSigning=false -p:CreatePackage=false
+# Restaura y compila Release para osx-x64 y osx-arm64 (aplicación universal).
+dotnet build -c Release -p:EnableCodeSigning=false -p:CreatePackage=false
 
 aplicacion="bin/Release/net10.0-macos26.0/Prototipo AppKit Mi Gestor BD Accesible.app"
 if [[ ! -d "$aplicacion" ]]; then
@@ -12,7 +11,7 @@ if [[ ! -d "$aplicacion" ]]; then
     exit 1
 fi
 ejecutable=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$aplicacion/Contents/Info.plist")
-lipo -verify_arch x86_64 arm64 "$aplicacion/Contents/MacOS/$ejecutable"
+lipo "$aplicacion/Contents/MacOS/$ejecutable" -verify_arch x86_64 arm64
 
 # Firma local sin cuenta de desarrollador, App Sandbox ni permisos de red.
 codesign --force --deep -s - --entitlements Entitlements.plist "$aplicacion"

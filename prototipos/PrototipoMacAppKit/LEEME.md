@@ -79,7 +79,7 @@ Desde esta carpeta, tras preparar los activos de restauración Release para las 
 ./empaquetar.sh
 ```
 
-El script ejecuta `dotnet build -c Release --no-restore`, sin firma de desarrollador ni creación de instalador. Espera la aplicación universal en `bin/Release/net10.0-macos26.0/Prototipo AppKit Mi Gestor BD Accesible.app`, lee el nombre de su ejecutable del Info.plist y comprueba `x86_64` y `arm64` con `lipo`. Si solo hay una arquitectura o faltan activos de restauración, falla antes de empaquetar.
+El script ejecuta `dotnet build -c Release`, que restaura las dos arquitecturas, sin firma de desarrollador ni creación de instalador. Espera la aplicación universal en `bin/Release/net10.0-macos26.0/Prototipo AppKit Mi Gestor BD Accesible.app`, lee el nombre de su ejecutable del Info.plist y comprueba `x86_64` y `arm64` con `lipo`. Si solo hay una arquitectura o faltan activos de restauración, falla antes de empaquetar.
 
 Firma con `codesign --force --deep -s - --entitlements Entitlements.plist`, verifica con `codesign --verify --deep --strict` y comprime con `ditto -c -k --sequesterRsrc --keepParent`. `Entitlements.plist` contiene un diccionario vacío: no solicita red ni App Sandbox. El zip queda en `salida/PrototipoMacAppKit-fecha-hora.zip`; `salida/`, `bin/` y `obj/` están ignorados por git. No sube archivos ni usa GitHub Actions. No necesitas una cuenta de desarrollador para esa firma.
 
