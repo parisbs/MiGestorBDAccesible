@@ -40,7 +40,12 @@ Windows).
   tecla en todos los motores. Las diferencias entre motores van por
   `CapacidadesMotorModelo` y `TerminosMotorModelo` de cada proveedor, nunca
   por comprobaciones del motor en la interfaz.
-- Sin uso de red ni telemetría. Las conexiones, el historial y las pestañas se
+- Sin uso de red ni telemetría, salvo una excepción explícita del autor desde
+  la versión 1.1: `ActualizacionesService` consulta en GitHub si hay una
+  versión nueva (como mucho una vez al día, desactivable desde «Buscar
+  actualizaciones al iniciar») y descarga el instalador cuando el usuario lo
+  pide. No se añade otra salida a la red ni se envían datos del usuario. Las
+  conexiones, el historial y las pestañas se
   quedan en la carpeta de datos de la aplicación del usuario
   (`%APPDATA%\MiGestorBDAccesible` en Windows). Las contraseñas se cifran
   para el usuario actual: con DPAPI en Windows y con Data Protection, con las
