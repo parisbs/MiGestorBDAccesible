@@ -488,3 +488,6 @@ $RECYCLE.BIN/
 
 # Instalador generado
 salida/
+
+# Worktrees de Claude Code
+.claude/worktrees/
