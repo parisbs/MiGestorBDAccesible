@@ -14,6 +14,7 @@ namespace MiGestorBDAccesible.Core.Conexiones
         };
 
         private readonly string _rutaArchivo;
+        private readonly TimeProvider _reloj;
         private readonly SemaphoreSlim _cerrojo = new(1, 1);
 
         public AlmacenConexionesService()
@@ -22,8 +23,19 @@ namespace MiGestorBDAccesible.Core.Conexiones
         }
 
         public AlmacenConexionesService(string rutaArchivo)
+            : this(rutaArchivo, TimeProvider.System)
+        {
+        }
+
+        public AlmacenConexionesService(string rutaArchivo, TimeProvider reloj)
         {
             _rutaArchivo = rutaArchivo;
+            _reloj = reloj;
+        }
+
+        public Task<ResultadoCargaConexiones> CargarAsync()
+        {
+            throw new NotImplementedException();
         }
 
         public async Task<List<ConexionModelo>> ListaAsync()
@@ -126,6 +138,11 @@ namespace MiGestorBDAccesible.Core.Conexiones
             var conexiones = await JsonSerializer.DeserializeAsync<List<ConexionModelo>>(flujo, _opcionesJson);
 
             return conexiones?.OrderBy(c => c.Nombre, StringComparer.CurrentCultureIgnoreCase).ToList() ?? [];
+        }
+
+        protected virtual Stream AbrirParaEscribir(string ruta)
+        {
+            throw new NotImplementedException();
         }
 
         private async Task EscribirAsync(List<ConexionModelo> conexiones)
