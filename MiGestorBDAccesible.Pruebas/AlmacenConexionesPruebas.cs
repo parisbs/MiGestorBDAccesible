@@ -223,20 +223,20 @@ namespace MiGestorBDAccesible.Pruebas
             private const int Limite = 16;
             private int _escritos;
 
-            public override void Write(byte[] datos, int inicio, int cantidad) => Write(datos.AsSpan(inicio, cantidad));
-
-            public override void Write(ReadOnlySpan<byte> datos)
+            public override void Write(byte[] datos, int inicio, int cantidad)
             {
-                var permitidos = Math.Min(datos.Length, Limite - _escritos);
-                base.Write(datos[..permitidos]);
+                var permitidos = Math.Min(cantidad, Limite - _escritos);
+                base.Write(datos, inicio, permitidos);
                 base.Flush();
                 _escritos += permitidos;
 
-                if (permitidos < datos.Length)
+                if (permitidos < cantidad)
                 {
                     throw new IOException("Fallo simulado a mitad de escritura.");
                 }
             }
+
+            public override void Write(ReadOnlySpan<byte> datos) => Write(datos.ToArray(), 0, datos.Length);
 
             public override Task WriteAsync(byte[] datos, int inicio, int cantidad, CancellationToken cancelacion)
             {
