@@ -1,6 +1,7 @@
 # Build outputs
 bin/
 obj/
+salida/
 
 # User-specific files
 .vs/

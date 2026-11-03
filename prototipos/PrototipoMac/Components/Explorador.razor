@@ -1,0 +1,107 @@
+@inject IJSRuntime js
+@inject AnunciadorService anunciador
+
+<ul role="tree" aria-label="Explorador de objetos de prueba" class="arbol" @ref="_arbol" @onkeydown="TeclaAsync">
+    @Nodo(_raiz, 1, 1)
+</ul>
+
+@code {
+    private sealed class NodoPrueba(string id, string texto, params NodoPrueba[] hijos)
+    {
+        public string Id { get; } = id;
+        public string Texto { get; } = texto;
+        public NodoPrueba[] Hijos { get; } = hijos;
+        public NodoPrueba? Padre { get; set; }
+        public bool Expandido { get; set; }
+        public int Nivel => (Padre?.Nivel ?? 0) + 1;
+    }
+
+    private readonly NodoPrueba _raiz = new NodoPrueba("servidor", "Servidor de prueba",
+        new NodoPrueba("bases", "Bases de datos",
+            new NodoPrueba("tienda", "Tienda",
+                new NodoPrueba("tablas", "Tablas",
+                    new NodoPrueba("clientes", "Clientes", new NodoPrueba("id", "Id, entero, clave principal"), new NodoPrueba("nombre", "Nombre, texto")),
+                    new NodoPrueba("pedidos", "Pedidos", new NodoPrueba("fecha", "Fecha, fecha"))),
+                new NodoPrueba("vistas", "Vistas", new NodoPrueba("resumen", "Resumen de ventas"))),
+            new NodoPrueba("archivo", "Archivo", new NodoPrueba("documentos", "Documentos"))),
+        new NodoPrueba("informacion", "Información del servidor"));
+    private NodoPrueba _activo = null!;
+    private ElementReference _arbol;
+    private string? _enfocar;
+
+    protected override void OnInitialized()
+    {
+        void Preparar(NodoPrueba nodo)
+        {
+            foreach (var hijo in nodo.Hijos) { hijo.Padre = nodo; Preparar(hijo); }
+        }
+        Preparar(_raiz);
+        _raiz.Expandido = true;
+        _raiz.Hijos[0].Expandido = true;
+        _activo = _raiz;
+    }
+
+    private RenderFragment Nodo(NodoPrueba nodo, int posicion, int total) => __builder =>
+    {
+        <li id="@nodo.Id" role="treeitem" aria-labelledby="@($"{nodo.Id}-texto")"
+            aria-level="@nodo.Nivel" aria-posinset="@posicion" aria-setsize="@total"
+            aria-expanded="@(nodo.Hijos.Length > 0 ? (nodo.Expandido ? "true" : "false") : null)"
+            aria-selected="@(nodo == _activo ? "true" : "false")" tabindex="@(nodo == _activo ? 0 : -1)"
+            data-base="Tienda" @onfocus="() => _activo = nodo" @onfocus:stopPropagation="true"
+            @onclick="() => Activar(nodo)" @onclick:stopPropagation="true">
+            <span id="@($"{nodo.Id}-texto")" class="texto-nodo">@nodo.Texto</span>
+            @if (nodo.Expandido && nodo.Hijos.Length > 0)
+            {
+                <ul role="group">
+                    @for (var i = 0; i < nodo.Hijos.Length; i++)
+                    {
+                        @Nodo(nodo.Hijos[i], i + 1, nodo.Hijos.Length)
+                    }
+                </ul>
+            }
+        </li>
+    };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) await js.InvokeVoidAsync("miGestor.prepararArbol", _arbol);
+        if (_enfocar is { } id)
+        {
+            _enfocar = null;
+            await js.InvokeVoidAsync("miGestor.enfocar", id);
+        }
+    }
+
+    private void Activar(NodoPrueba nodo) { _activo = nodo; _enfocar = nodo.Id; }
+
+    private async Task TeclaAsync(KeyboardEventArgs e)
+    {
+        var visibles = new List<NodoPrueba>();
+        void Recorrer(NodoPrueba nodo)
+        {
+            visibles.Add(nodo);
+            if (nodo.Expandido) foreach (var hijo in nodo.Hijos) Recorrer(hijo);
+        }
+        Recorrer(_raiz);
+        var indice = visibles.IndexOf(_activo);
+        switch (e.Key)
+        {
+            case "ArrowDown": Activar(visibles[Math.Min(indice + 1, visibles.Count - 1)]); break;
+            case "ArrowUp": Activar(visibles[Math.Max(indice - 1, 0)]); break;
+            case "Home": Activar(visibles[0]); break;
+            case "End": Activar(visibles[^1]); break;
+            case "ArrowRight":
+                if (_activo.Hijos.Length > 0 && !_activo.Expandido) _activo.Expandido = true;
+                else if (_activo.Expandido && _activo.Hijos.Length > 0) Activar(_activo.Hijos[0]);
+                break;
+            case "ArrowLeft":
+                if (_activo.Expandido) _activo.Expandido = false;
+                else if (_activo.Padre is { } padre) Activar(padre);
+                break;
+            case "Enter":
+                if (_activo.Hijos.Length > 0) _activo.Expandido = !_activo.Expandido;
+                else await anunciador.AnunciarAsync($"Objeto seleccionado: {_activo.Texto}.");
+                break;
+        }
+    }
+}
