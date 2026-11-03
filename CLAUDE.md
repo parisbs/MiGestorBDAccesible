@@ -89,4 +89,4 @@ Windows).
   numerados `AC-n`. Las pruebas que demuestran un criterio llevan su
   identificador en el nombre. Los criterios que solo se pueden comprobar con
   un lector de pantalla se marcan `(manual, NVDA)`.
-- Human merge: `*.csproj`, `*.sln`, `Directory.Build.props`, `instalador/*.nsi`, `*.ps1`
+- Human merge: `**/*.csproj`, `*.sln`, `**/Directory.Build.props`, `instalador/*.nsi`, `*.ps1`
