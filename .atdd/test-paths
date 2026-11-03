@@ -1,0 +1,3 @@
+# Rutas que el guard de ATDD trata como pruebas. El proyecto de pruebas de
+# .NET no coincide con los nombres de carpeta predeterminados.
+MiGestorBDAccesible.Pruebas/**
