@@ -5,7 +5,9 @@
              xmlns:components="clr-namespace:PrototipoMac.Components"
              x:Class="PrototipoMac.MainPage">
 
-    <BlazorWebView x:Name="blazorWebView" HostPage="wwwroot/index.html">
+    <BlazorWebView x:Name="blazorWebView" HostPage="wwwroot/index.html"
+                   BlazorWebViewInitialized="AlInicializarVistaWeb"
+                   Loaded="AlCargarVistaWeb" Unloaded="AlDescargarVistaWeb">
         <BlazorWebView.RootComponents>
             <RootComponent Selector="#app" ComponentType="{x:Type components:Routes}" />
         </BlazorWebView.RootComponents>

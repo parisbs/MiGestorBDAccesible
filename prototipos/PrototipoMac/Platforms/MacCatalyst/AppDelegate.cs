@@ -19,6 +19,8 @@ public class AppDelegate : MauiUIApplicationDelegate
         // El contenido web será el único responsable de estos atajos.
         builder.RemoveMenu(UIMenuIdentifier.File.GetConstant()!.ToString());
         builder.RemoveMenu(UIMenuIdentifier.Find.GetConstant()!.ToString());
+        // Retiramos Formato y sus submenús para liberar Command+B/I/U/T.
+        builder.RemoveMenu(UIMenuIdentifier.Format.GetConstant()!.ToString());
         foreach (var identificador in new[] { UIMenuIdentifier.Edit, UIMenuIdentifier.View, UIMenuIdentifier.Window, UIMenuIdentifier.Help })
         {
             var nombre = identificador.GetConstant()!.ToString();

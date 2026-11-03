@@ -64,7 +64,11 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender) await js.InvokeVoidAsync("miGestor.prepararArbol", _arbol);
+        if (firstRender)
+        {
+            await js.InvokeVoidAsync("miGestor.prepararArbol", _arbol);
+            await js.InvokeVoidAsync("miGestor.enfocar", _activo.Id);
+        }
         if (_enfocar is { } id)
         {
             _enfocar = null;
