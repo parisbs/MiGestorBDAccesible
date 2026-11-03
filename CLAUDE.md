@@ -2,9 +2,7 @@
 
 Gestor de bases de datos de escritorio para SQL Server, Oracle y PostgreSQL,
 hecho para usarse por completo con el teclado y un lector de pantalla (NVDA en
-Windows). Este checkout es el fork `parisbs/MiGestorBDAccesible` de
-`WilmerRv1989/MiGestorBDAccesible`. El fork existe solo para contribuir: el
-producto y sus decisiones son del autor original.
+Windows).
 
 ## Comandos
 
@@ -59,70 +57,36 @@ producto y sus decisiones son del autor original.
   parciales por tema; una función que toca los proveedores se implementa en
   los tres motores o se marca como no disponible mediante las capacidades.
 - Las pruebas son xUnit en `MiGestorBDAccesible.Pruebas`, solo unitarias sobre
-  el núcleo; no hay pruebas de integración contra servidores reales. El guard
-  de ATDD lee las rutas de pruebas de `.atdd/test-paths`.
+  el núcleo; no hay pruebas de integración contra servidores reales.
+- Los archivos `.cs` se guardan con LF (`.gitattributes`): varias pruebas
+  comparan scripts generados con cadenas literales de varias líneas.
 - `MANUAL.md` va incrustado en el ensamblado del núcleo y
   `MiGestorBDAccesible.Herramientas` lo exporta como manual HTML; la ayuda de
   F1 sale de los `fichas.json` de cada motor en `MiGestorBDAccesible.Core/Ayuda/`.
 
 ## Convenciones
 
-- Idioma: todo en español, como el proyecto original: identificadores,
-  comentarios, textos de la interfaz, documentación, este archivo, ADRs,
-  issues, commits y pull requests. Los textos de la interfaz tutean al
-  usuario. Se mantienen en inglés solo los términos estándar: los tipos de
-  Conventional Commits, los identificadores `AC-n` y los valores de `status`
-  de los ADRs.
+- Idioma: todo en español: identificadores, comentarios, textos de la
+  interfaz, documentación, este archivo, issues, commits y pull requests. Los
+  textos de la interfaz tutean al usuario. Se mantienen en inglés solo los
+  términos estándar, como los tipos de Conventional Commits y los
+  identificadores `AC-n`.
 - Git: nombres de rama de gitflow (`feature/`, `fix/`, `hotfix/`, `release/`,
   `chore/`, `docs/`, `refactor/`, `test/`) con la descripción en español y sin
-  tildes; merge con squash; las versiones son etiquetas anotadas `vX.Y.Z`.
+  tildes; las versiones son etiquetas anotadas `vX.Y.Z`.
 - Commits y títulos de pull request: Conventional Commits en una línea, con
   el tipo estándar y la descripción en español en infinitivo, por ejemplo
   `feat(explorador): agregar búsqueda por esquema`. El ámbito va sin tildes ni
-  eñes, porque la comprobación de títulos solo admite `[a-z0-9._/-]`.
+  eñes.
 - Un cambio de comportamiento visible o de una tecla actualiza `MANUAL.md` en
   el mismo cambio, y las fichas de F1 cuando toca la ayuda de SQL.
 - Los diagramas de la documentación usan Mermaid y llevan una breve
   descripción en prosa.
-- No se crean ADRs nuevos: el autor original no los usa y no puede
-  discutirlos ni aceptarlos con nosotros, así que solo añadirían ruido. Una
-  decisión que cierra una alternativa se resume en el issue de la tarea
-  (decisión, alternativas descartadas y por qué) y, cuando el trabajo va al
-  original, en el cuerpo de su pull request. `docs/adr/` conserva el registro
-  0001, ya desactualizado (habla de Linux), y la comprobación de ADRs sigue
-  en la CI hasta que se retire.
-
-## Fork y repositorio original
-
-- Remotos: `origin` es el fork y `upstream` el original; `remote.pushDefault`
-  es `origin`. Nunca se hace push a `upstream`.
-- `main` es un espejo exacto de `upstream/main`: solo avanza por fast-forward
-  (Sync fork o `gh repo sync`) y nunca lleva commits propios.
-- `workflow` es la rama predeterminada del fork: `main` más los commits del
-  flujo de trabajo (este archivo, `.atdd/`, `docs/adr/`,
-  `scripts/check-adrs.mjs`, las comprobaciones de título y de ADRs). Cuando
-  `main` avanza, `workflow` se rebasa sobre `main`; ese force push lo hace o
-  lo aprueba el humano.
-- Las ramas de trabajo salen de `workflow`, para tener estas instrucciones.
-  Antes del pull request al original, la rama se pasa a `main` con
-  `git rebase --onto main workflow <rama>` y se comprueba con
-  `git diff main --stat` que no lleva ningún archivo del flujo. El pull
-  request apunta a `WilmerRv1989/MiGestorBDAccesible` y dice qué
-  comprobaciones se ejecutaron; la evidencia del oráculo de ATDD va en su
-  descripción, porque el rebase reescribe los commits a los que apunta la
-  etiqueta.
-- Lo que se propone al original y ya está en `workflow` (el CI de compilación
-  y las plantillas de issues y pull requests) va en sus propios commits,
-  debajo de los del flujo, para que el rebase los descarte cuando el original
-  los incorpore.
 
 ## Flujo de trabajo
 
 - Los issues llevan criterios de aceptación como `CUANDO ... ENTONCES ...`,
-  numerados `AC-n`; equivalen a los `WHEN ... THEN ...` de las skills. Las
-  pruebas que demuestran un criterio llevan su identificador en el nombre.
-  Los criterios que solo se pueden comprobar con un lector de pantalla se
-  marcan `(manual, NVDA)`.
-- Review: none
-- Implement: codex
+  numerados `AC-n`. Las pruebas que demuestran un criterio llevan su
+  identificador en el nombre. Los criterios que solo se pueden comprobar con
+  un lector de pantalla se marcan `(manual, NVDA)`.
 - Human merge: `*.csproj`, `*.sln`, `Directory.Build.props`, `instalador/*.nsi`, `*.ps1`
